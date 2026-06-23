@@ -10,6 +10,7 @@ import type {
   Bill,
   Subscription,
   TaxRecord,
+  Profile,
 } from '../types';
 
 const STORAGE_KEY = 'moneyPersonal_appData';
@@ -25,6 +26,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, [appData]);
 
   const updateAppData = (data: AppData) => setAppData(data);
+  const setProfile = (profile: Profile) => setAppData(prev => ({ ...prev, profile }));
   const setAgePlan = (entries: AgePlanEntry[]) => setAppData(prev => ({ ...prev, agePlan: entries }));
   const setIncome = (entries: IncomeEntry[]) => setAppData(prev => ({ ...prev, income: entries }));
   const setSavings = (accounts: SavingsAccount[]) => setAppData(prev => ({ ...prev, savings: accounts }));
@@ -37,6 +39,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
     <AppDataContext.Provider value={{
       appData,
       updateAppData,
+      setProfile,
       setAgePlan,
       setIncome,
       setSavings,

@@ -41,18 +41,19 @@ VS Code quick launch — two options:
 src/
 ├── App.tsx                     # Root — AppDataProvider wraps RouterProvider
 ├── main.tsx                    # React entry point; imports Inter font weights + index.css
-├── router.tsx                  # createBrowserRouter; routes derived from TABS + a separate /about route
+├── router.tsx                  # createBrowserRouter; routes derived from TABS + separate /about + /profile routes
 ├── index.css                   # Global styles + Tailwind import + @theme tokens
 ├── types/
 │   ├── index.ts                 # Barrel — re-exports every domain type file
-│   ├── agePlan.ts                # AgePlanEntry
+│   ├── agePlan.ts                # AgePlanNote, PlanItem, AgePlanEntry
 │   ├── income.ts                 # IncomeEntry
 │   ├── savings.ts                 # SavingsAccount
 │   ├── loan.ts                     # Loan
 │   ├── bills.ts                     # Bill
 │   ├── subscription.ts               # Subscription
 │   ├── tax.ts                         # TaxRecord
-│   └── appData.ts                     # AppData (7 slices) + EMPTY_APP_DATA + hydrateAppData
+│   ├── profile.ts                      # Profile (singleton — not a domain array, see Data model)
+│   └── appData.ts                       # AppData (profile + 7 domain slices) + EMPTY_APP_DATA + hydrateAppData
 ├── store/
 │   ├── context.ts               # createContext<AppDataContextType>(undefined)
 │   ├── AppDataProvider.tsx      # Provider: localStorage sync, domain setters, updateAppData
@@ -60,11 +61,17 @@ src/
 │   └── AppDataProvider.test.tsx
 ├── config/
 │   └── tabs.ts                  # TABS — single source of truth for nav AND routes
+├── utils/
+│   ├── cn.ts                    # clsx + tailwind-merge helper
+│   └── age.ts                    # ageForYear(dateOfBirth, year) — shared by ProfilePage + AgePlanPage
 └── components/
-    ├── Layout.tsx                 # Header (logo + nav from TABS, "|", About) + <Outlet/> + footer
+    ├── Layout.tsx                 # Header (logo + nav from TABS, "|", Profile icon, About) + <Outlet/> + footer
     ├── EmptyTabPlaceholder.tsx    # Shared "Coming soon" stub panel
-    ├── DashboardPage.tsx          # Cross-domain summary cards, year selector, backup export/import
-    ├── AgePlanPage.tsx            # Stub
+    ├── BackupControls.tsx          # Shared export/import buttons — used by Dashboard and Profile
+    ├── DashboardPage.tsx          # Cross-domain summary cards, year selector, <BackupControls/>
+    ├── AgePlanPage.tsx            # Year/Age/Happened/Plan CRUD table (see Age & Plan below)
+    ├── AgePlanItemList.tsx         # Reusable inline-editable list for the Happened/Plan columns
+    ├── ProfilePage.tsx             # Date of birth input + derived current age + <BackupControls/>
     ├── IncomePage.tsx             # Stub
     ├── SavingsPage.tsx            # Stub
     ├── LoanPage.tsx               # Stub
@@ -78,7 +85,9 @@ src/
 
 ```ts
 AppData
-  ├── agePlan: AgePlanEntry[]        // { id, year, age, title, description? }
+  ├── profile: Profile                // { dateOfBirth: string | null } — singleton, not an array
+  ├── agePlan: AgePlanEntry[]        // { id, year, age, happened: AgePlanNote[], plans: PlanItem[] }
+  │                                    // AgePlanNote = { id, text }; PlanItem = AgePlanNote & { done }
   ├── income: IncomeEntry[]           // { id, source, amount }
   ├── savings: SavingsAccount[]        // { id, name, balance }
   ├── loans: Loan[]                     // { id, name, principal }
@@ -89,20 +98,22 @@ AppData
 
 `localStorage` key: `moneyPersonal_appData` (single JSON blob holding the whole `AppData` tree).
 
-Domain types are intentionally minimal placeholders — do not over-design fields until a tab's real feature work begins.
+Domain types are intentionally minimal placeholders — do not over-design fields until a tab's real feature work begins. `AgePlanEntry` and `Profile` are the first two to graduate past that placeholder stage; the rest still are.
+
+`AgePlanEntry.age` is a stored field, not a live-computed one — it auto-fills from `profile.dateOfBirth` (`Year − birth year`, via `utils/age.ts`'s `ageForYear`) whenever a row's `year` is set or changed, but stays a normal editable number input so it still works with no profile set, and can be overridden per row. Editing the DOB later does **not** retroactively recompute existing rows — only new rows or rows whose `year` you re-touch get the fresh value. This matches the rest of the app, where every field is a plain stored value with nothing derived live at render time.
 
 ## State management
 
-All state lives in `AppDataProvider`. Read the whole tree via `appData`. Mutate a single domain via its scoped setter (`setIncome`, `setSavings`, `setLoans`, `setBills`, `setSubscriptions`, `setTaxRecords`, `setAgePlan`) — each replaces that domain's entire array, mirroring `money_splitter`'s `updateProject` pattern but scoped per-domain since there are 7 independent entities here instead of 1. `updateAppData(data)` is also available for whole-state operations — it's what backs the Dashboard's backup import (see below).
+All state lives in `AppDataProvider`. Read the whole tree via `appData`. Mutate a single domain via its scoped setter (`setIncome`, `setSavings`, `setLoans`, `setBills`, `setSubscriptions`, `setTaxRecords`, `setAgePlan`, `setProfile`) — each replaces that domain's entire value, mirroring `money_splitter`'s `updateProject` pattern but scoped per-domain since there are independent entities here instead of 1. `setProfile` replaces the whole `Profile` object (it's a singleton, not an array) rather than a single array like the others. `updateAppData(data)` is also available for whole-state operations — it's what backs the backup import (see below).
 
 On load, a saved blob missing a key (older/partial schema) is merged against `EMPTY_APP_DATA` via `hydrateAppData()` so any missing domain safely defaults to `[]`. `hydrateAppData()` is shared between the provider's initial load and the Dashboard's backup-import handler — don't duplicate that merge logic inline elsewhere.
 
 ## Backup — export / import
 
-`DashboardPage.tsx` has "Export backup" / "Import backup" controls (mirrors `money_splitter`'s Dashboard project export/import, just for the single unified `AppData` blob instead of per-project):
+`components/BackupControls.tsx` is a shared component rendering "Export backup" / "Import backup" controls, used on both `DashboardPage.tsx` and `ProfilePage.tsx` (mirrors `money_splitter`'s Dashboard project export/import, just for the single unified `AppData` blob instead of per-project). Don't duplicate this JSX/logic inline on a page — import the component.
 
-- **Export** downloads the current `appData` as `moneyPersonal_appData_backup_<YYYY-MM-DD>.json` via a `data:` URI — same browser-download mechanism as `money_splitter`, so it lands in Downloads, never in the repo.
-- **Import** reads a chosen `.json` file, confirms with the user (it replaces *all* current data), then calls `updateAppData(hydrateAppData(parsed))` — `hydrateAppData` means an older/partial backup still loads safely.
+- **Export** downloads the current `appData` (the *entire* tree, including `profile`) as `moneyPersonal_appData_backup_<YYYY-MM-DD>.json` via a `data:` URI — same browser-download mechanism as `money_splitter`, so it lands in Downloads, never in the repo.
+- **Import** reads a chosen `.json` file, confirms with the user (it replaces *all* current data), then calls `updateAppData(hydrateAppData(parsed))` — `hydrateAppData` means an older/partial backup still loads safely (e.g. one taken before `profile` existed just defaults it to `{ dateOfBirth: null }`).
 
 This is the only place a JSON file representing personal data should ever exist on disk, and only transiently in the user's Downloads folder — see "Never commit personal financial data" below.
 
@@ -114,14 +125,17 @@ The Dashboard has a year `<select>` (defaults to the current year, plus any year
 
 `src/config/tabs.ts` (`TABS`) is the single source of truth for the 8 financial domain tabs — each entry has `path`, `label`, `icon`, and the `Component` to render. `router.tsx` derives its route list directly from `TABS`, and `Layout.tsx` derives its nav links from the same array. **Adding a 9th domain tab = one entry in `TABS` plus one new component file** — never hand-write a `<NavLink>` or a route for one of the 8.
 
-**About is deliberately not in `TABS`.** It's a single, fixed, non-domain page (mirrors `money_splitter`'s own About, which was never part of any tab-switching array either). `Layout.tsx` renders it after a `|` separator following the main tab list, and `router.tsx` adds its `/about` route as a sibling alongside the `TABS`-derived ones, not inside the array. If a second "meta" page is ever needed, follow the same pattern rather than forcing it into `TABS`.
+**About and Profile are deliberately not in `TABS`.** They're fixed, non-domain pages (About mirrors `money_splitter`'s own About, which was never part of any tab-switching array either). `Layout.tsx` renders both after a `|` separator following the main tab list — Profile first (an icon-only `NavLink` using `User` from `lucide-react`), then About (text) — and `router.tsx` adds `/profile` and `/about` as sibling routes alongside the `TABS`-derived ones, not inside the array. If a third "meta" page is ever needed, follow the same pattern rather than forcing it into `TABS`.
+
+**Profile's nav link is the first icon-only element in the nav.** Every other nav link (the 8 `TABS` entries plus About) is text-only — `TabConfig.icon` exists on the type but Layout never actually renders it. Profile's icon button reuses the same active-state `cn()` pattern (`text-zinc-100` active vs a muted/hover color otherwise), just applied to the icon's color instead of text.
 
 ## Roadmap (not yet built — scaffolded only)
 
 - [x] Dashboard — year selector (Age & Plan + Tax only) and backup export/import
+- [x] Profile — date of birth input, used to auto-derive Age & Plan's Age column
+- [x] Age & Plan — timeline CRUD UI (Year/Age/Happened/Plan table, with done-toggle + strikethrough on Plan items)
 - [ ] Dashboard — real cross-domain aggregation (net worth, monthly cash flow, etc.)
 - [ ] Income/Savings/Loan/Bills/Subscription — decide and build their own filter mechanism (not year-based)
-- [ ] Age & Plan — timeline CRUD UI
 - [ ] Income — entry CRUD UI
 - [ ] Savings — account CRUD UI
 - [ ] Loan — loan CRUD UI + amortization calculations
@@ -134,7 +148,7 @@ The Dashboard has a year `<select>` (defaults to the current year, plus any year
 - **Conditional classes**: use `cn()` from `utils/cn.ts` — never string concatenation.
 - **IDs**: always `uuidv4()` from the `uuid` package.
 - **No backend**: never introduce server-side code, fetch calls to external APIs, or environment variables. This is intentional — the app is designed to be statically hosted.
-- **No `components/ui/` primitives folder**: Tailwind utility classes are used directly and repeated rather than abstracted into Button/Card/Input components, matching `money_splitter`'s convention. `EmptyTabPlaceholder` is the one deliberate exception, since all 7 stub pages are structurally identical, not just visually similar.
+- **No `components/ui/` primitives folder**: Tailwind utility classes are used directly and repeated rather than abstracted into Button/Card/Input components, matching `money_splitter`'s convention. `EmptyTabPlaceholder`, `BackupControls`, and `AgePlanItemList` are the deliberate exceptions — each one is reused by 2+ structurally identical call sites (not just visually similar ones), not a speculative abstraction.
 - **Tab navigation**: data-driven from `TABS` in `src/config/tabs.ts` (see Routing above).
 
 ## Development workflow

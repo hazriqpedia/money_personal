@@ -1,4 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom';
+import { User } from 'lucide-react';
 import { cn } from '../utils/cn';
 import { TABS } from '../config/tabs';
 
@@ -29,6 +30,15 @@ export const Layout = () => {
             </NavLink>
           ))}
           <span className="text-zinc-700 select-none" aria-hidden="true">|</span>
+          <NavLink
+            to="/profile"
+            aria-label="Profile"
+            className={({ isActive }) =>
+              cn('transition-colors', isActive ? 'text-zinc-100' : 'text-zinc-500 hover:text-zinc-300')
+            }
+          >
+            <User size={18} />
+          </NavLink>
           <NavLink
             to="/about"
             className={({ isActive }) =>

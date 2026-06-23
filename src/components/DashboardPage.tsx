@@ -1,7 +1,7 @@
-import { Download, Upload } from 'lucide-react';
 import { useState } from 'react';
 import { useAppData } from '../store/useAppData';
-import { hydrateAppData } from '../types';
+import { BackupControls } from './BackupControls';
+import { ageForYear } from '../utils/age';
 
 function formatCount(count: number, scope?: string) {
   if (count === 0) return scope ? `No entries for ${scope}.` : 'No entries yet.';
@@ -10,7 +10,7 @@ function formatCount(count: number, scope?: string) {
 }
 
 export const DashboardPage = () => {
-  const { appData, updateAppData } = useAppData();
+  const { appData } = useAppData();
   const currentYear = new Date().getFullYear();
   const [selectedYear, setSelectedYear] = useState(currentYear);
 
@@ -22,6 +22,9 @@ export const DashboardPage = () => {
 
   const agePlanCount = appData.agePlan.filter(e => e.year === selectedYear).length;
   const taxCount = appData.taxRecords.filter(e => e.year === selectedYear).length;
+  const currentAge = appData.profile.dateOfBirth
+    ? ageForYear(appData.profile.dateOfBirth, currentYear)
+    : null;
 
   const sections = [
     { label: 'Age & Plan', text: formatCount(agePlanCount, String(selectedYear)) },
@@ -32,34 +35,6 @@ export const DashboardPage = () => {
     { label: 'Subscriptions', text: formatCount(appData.subscriptions.length) },
     { label: 'Tax Records', text: formatCount(taxCount, String(selectedYear)) },
   ];
-
-  const handleExport = () => {
-    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(appData, null, 2));
-    const date = new Date().toISOString().slice(0, 10);
-    const a = document.createElement('a');
-    a.setAttribute('href', dataStr);
-    a.setAttribute('download', `moneyPersonal_appData_backup_${date}.json`);
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-  };
-
-  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const parsed = JSON.parse(event.target?.result as string);
-        if (!window.confirm('Import this backup? This will replace all current data.')) return;
-        updateAppData(hydrateAppData(parsed));
-      } catch {
-        alert('Failed to parse backup file.');
-      }
-    };
-    reader.readAsText(file);
-    e.target.value = '';
-  };
 
   return (
     <div className="max-w-6xl mx-auto px-10 pt-10 pb-10 w-full">
@@ -82,25 +57,14 @@ export const DashboardPage = () => {
               <option key={year} value={year}>{year}</option>
             ))}
           </select>
+          {currentAge !== null && (
+            <>
+              <span className="text-zinc-700 select-none" aria-hidden="true">|</span>
+              <span className="text-sm text-zinc-400">{currentAge} years old</span>
+            </>
+          )}
         </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleExport}
-            className="group cursor-pointer text-zinc-400 hover:text-zinc-200 text-sm flex items-center gap-0 transition-colors"
-          >
-            <Download size={16} />
-            <span className="max-w-0 overflow-hidden group-hover:max-w-32 group-hover:ml-2 transition-all duration-200 whitespace-nowrap">
-              Export backup
-            </span>
-          </button>
-          <label className="group cursor-pointer text-zinc-400 hover:text-zinc-200 text-sm flex items-center gap-0 transition-colors">
-            <Upload size={16} />
-            <span className="max-w-0 overflow-hidden group-hover:max-w-32 group-hover:ml-2 transition-all duration-200 whitespace-nowrap">
-              Import backup
-            </span>
-            <input type="file" accept=".json" className="hidden" onChange={handleImport} />
-          </label>
-        </div>
+        <BackupControls />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">

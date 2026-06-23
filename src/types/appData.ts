@@ -5,8 +5,10 @@ import type { Loan } from './loan';
 import type { Bill } from './bills';
 import type { Subscription } from './subscription';
 import type { TaxRecord } from './tax';
+import type { Profile } from './profile';
 
 export interface AppData {
+  profile: Profile;
   agePlan: AgePlanEntry[];
   income: IncomeEntry[];
   savings: SavingsAccount[];
@@ -17,6 +19,7 @@ export interface AppData {
 }
 
 export const EMPTY_APP_DATA: AppData = {
+  profile: { dateOfBirth: null },
   agePlan: [],
   income: [],
   savings: [],

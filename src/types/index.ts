@@ -5,4 +5,5 @@ export * from './loan';
 export * from './bills';
 export * from './subscription';
 export * from './tax';
+export * from './profile';
 export * from './appData';

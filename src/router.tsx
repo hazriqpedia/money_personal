@@ -2,6 +2,7 @@ import { createBrowserRouter } from 'react-router-dom';
 import { Layout } from './components/Layout';
 import { TABS } from './config/tabs';
 import { AboutPage } from './components/AboutPage';
+import { ProfilePage } from './components/ProfilePage';
 
 export const router = createBrowserRouter([
   {
@@ -9,6 +10,7 @@ export const router = createBrowserRouter([
     children: [
       ...TABS.map(({ path, Component }) => ({ path, element: <Component /> })),
       { path: '/about', element: <AboutPage /> },
+      { path: '/profile', element: <ProfilePage /> },
     ],
   },
 ]);

@@ -60,9 +60,20 @@ describe('domain setters', () => {
 
   it('setAgePlan updates only the agePlan slice', () => {
     const { result } = renderHook(() => useAppData(), { wrapper });
-    act(() => { result.current.setAgePlan([{ id: '1', year: 2026, age: 30, title: 'Started new job' }]); });
+    act(() => {
+      result.current.setAgePlan([
+        { id: '1', year: 2026, age: 30, happened: [{ id: 'h1', text: 'Started new job' }], plans: [] },
+      ]);
+    });
     expect(result.current.appData.agePlan).toHaveLength(1);
     expect(result.current.appData.income).toEqual([]);
+  });
+
+  it('setProfile updates only the profile slice', () => {
+    const { result } = renderHook(() => useAppData(), { wrapper });
+    act(() => { result.current.setProfile({ dateOfBirth: '1992-06-15' }); });
+    expect(result.current.appData.profile).toEqual({ dateOfBirth: '1992-06-15' });
+    expect(result.current.appData.agePlan).toEqual([]);
   });
 });
 

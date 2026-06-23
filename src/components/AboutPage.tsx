@@ -33,6 +33,10 @@ const pages = [
     title: 'Tax',
     description: 'Keep a record of tax filings and payments, year over year.',
   },
+  {
+    title: 'Profile',
+    description: 'Set your date of birth so Age & Plan can calculate your age automatically.',
+  },
 ];
 
 export function AboutPage() {
