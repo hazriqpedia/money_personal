@@ -17,17 +17,77 @@ beforeEach(() => {
 describe('domain setters', () => {
   it('setIncome updates only the income slice', () => {
     const { result } = renderHook(() => useAppData(), { wrapper });
-    act(() => { result.current.setIncome([{ id: '1', source: 'Job', amount: 5000 }]); });
+    act(() => {
+      result.current.setIncome([
+        { id: '1', year: 2026, label: '', monthly: 5000, annually: 60000, gross: 6000, isPrimary: false },
+      ]);
+    });
     expect(result.current.appData.income).toHaveLength(1);
-    expect(result.current.appData.savings).toEqual([]);
+    expect(result.current.appData.savingsAccounts).toEqual([]);
     expect(result.current.appData.loans).toEqual([]);
   });
 
-  it('setSavings updates only the savings slice', () => {
+  it('setSpendingPlan updates only the spendingPlan slice', () => {
     const { result } = renderHook(() => useAppData(), { wrapper });
-    act(() => { result.current.setSavings([{ id: '1', name: 'Emergency Fund', balance: 1000 }]); });
-    expect(result.current.appData.savings).toHaveLength(1);
+    act(() => { result.current.setSpendingPlan([{ id: '1', name: 'Rent', amount: 1500 }]); });
+    expect(result.current.appData.spendingPlan).toHaveLength(1);
     expect(result.current.appData.income).toEqual([]);
+  });
+
+  it('setSavingsPlan updates only the savingsPlan slice', () => {
+    const { result } = renderHook(() => useAppData(), { wrapper });
+    act(() => { result.current.setSavingsPlan([{ id: '1', name: 'ASB', amount: 200 }]); });
+    expect(result.current.appData.savingsPlan).toHaveLength(1);
+    expect(result.current.appData.spendingPlan).toEqual([]);
+  });
+
+  it('setCreditCardSpending updates only the creditCardSpending slice', () => {
+    const { result } = renderHook(() => useAppData(), { wrapper });
+    act(() => {
+      result.current.setCreditCardSpending([{ cardId: 'cc1', items: [{ id: '1', name: 'Groceries', amount: 150 }] }]);
+    });
+    expect(result.current.appData.creditCardSpending).toHaveLength(1);
+    expect(result.current.appData.savingsPlan).toEqual([]);
+  });
+
+  it('setSavingsAccounts updates only the savingsAccounts slice', () => {
+    const { result } = renderHook(() => useAppData(), { wrapper });
+    act(() => {
+      result.current.setSavingsAccounts([{ id: '1', name: 'Emergency Fund', category: 'savings' }]);
+    });
+    expect(result.current.appData.savingsAccounts).toHaveLength(1);
+    expect(result.current.appData.income).toEqual([]);
+  });
+
+  it('setSavingsSnapshots updates only the savingsSnapshots slice', () => {
+    const { result } = renderHook(() => useAppData(), { wrapper });
+    act(() => {
+      result.current.setSavingsSnapshots([{ id: '1', date: '2026-01-01', balances: [{ accountId: 'a1', balance: 100 }] }]);
+    });
+    expect(result.current.appData.savingsSnapshots).toHaveLength(1);
+    expect(result.current.appData.savingsAccounts).toEqual([]);
+  });
+
+  it('setEpfEntries updates only the epfEntries slice', () => {
+    const { result } = renderHook(() => useAppData(), { wrapper });
+    act(() => {
+      result.current.setEpfEntries([
+        { id: '1', date: '2026-01-01', account1: 100, account2: 200, account3: 50, monthlySavings: 300 },
+      ]);
+    });
+    expect(result.current.appData.epfEntries).toHaveLength(1);
+    expect(result.current.appData.goldEntries).toEqual([]);
+  });
+
+  it('setGoldEntries updates only the goldEntries slice', () => {
+    const { result } = renderHook(() => useAppData(), { wrapper });
+    act(() => {
+      result.current.setGoldEntries([
+        { id: '1', dateBought: '2026-01-01', mode: 'GAP', weight: 1, price: 270 },
+      ]);
+    });
+    expect(result.current.appData.goldEntries).toHaveLength(1);
+    expect(result.current.appData.epfEntries).toEqual([]);
   });
 
   it('setLoans updates only the loans slice', () => {
@@ -71,8 +131,14 @@ describe('domain setters', () => {
 
   it('setProfile updates only the profile slice', () => {
     const { result } = renderHook(() => useAppData(), { wrapper });
-    act(() => { result.current.setProfile({ dateOfBirth: '1992-06-15' }); });
-    expect(result.current.appData.profile).toEqual({ dateOfBirth: '1992-06-15' });
+    const profile = {
+      dateOfBirth: '1992-06-15',
+      currencySymbol: '$',
+      budgetSplit: { needs: 50, wants: 30, savings: 20 },
+      creditCards: [],
+    };
+    act(() => { result.current.setProfile(profile); });
+    expect(result.current.appData.profile).toEqual(profile);
     expect(result.current.appData.agePlan).toEqual([]);
   });
 });
@@ -82,8 +148,10 @@ describe('updateAppData', () => {
     const { result } = renderHook(() => useAppData(), { wrapper });
     const next: AppData = {
       ...EMPTY_APP_DATA,
-      income: [{ id: '1', source: 'Freelance', amount: 1200 }],
-      savings: [{ id: '1', name: 'Travel Fund', balance: 500 }],
+      income: [
+        { id: '1', year: 2026, label: 'Freelance', monthly: 1200, annually: 14400, gross: 1500, isPrimary: false },
+      ],
+      savingsAccounts: [{ id: '1', name: 'Travel Fund', category: 'savings' }],
     };
     act(() => { result.current.updateAppData(next); });
     expect(result.current.appData).toEqual(next);
@@ -93,20 +161,29 @@ describe('updateAppData', () => {
 describe('localStorage persistence', () => {
   it('persists appData on change', () => {
     const { result } = renderHook(() => useAppData(), { wrapper });
-    act(() => { result.current.setIncome([{ id: '1', source: 'Job', amount: 5000 }]); });
+    act(() => {
+      result.current.setIncome([
+        { id: '1', year: 2026, label: '', monthly: 5000, annually: 60000, gross: 6000, isPrimary: false },
+      ]);
+    });
     const stored = JSON.parse(localStorage.getItem('moneyPersonal_appData') ?? '{}');
-    expect(stored.income[0].source).toBe('Job');
+    expect(stored.income[0].monthly).toBe(5000);
   });
 
   it('restores appData from localStorage on mount', () => {
-    const saved: AppData = { ...EMPTY_APP_DATA, savings: [{ id: 's1', name: 'From Storage', balance: 999 }] };
+    const saved: AppData = {
+      ...EMPTY_APP_DATA,
+      savingsAccounts: [{ id: 's1', name: 'From Storage', category: 'savings' }],
+    };
     localStorage.setItem('moneyPersonal_appData', JSON.stringify(saved));
     const { result } = renderHook(() => useAppData(), { wrapper });
-    expect(result.current.appData.savings[0].name).toBe('From Storage');
+    expect(result.current.appData.savingsAccounts[0].name).toBe('From Storage');
   });
 
   it('defaults a missing key from an older/partial saved blob to an empty array', () => {
-    const partial = { income: [{ id: '1', source: 'Job', amount: 5000 }] };
+    const partial = {
+      income: [{ id: '1', year: 2026, label: '', monthly: 5000, annually: 60000, gross: 6000, isPrimary: false }],
+    };
     localStorage.setItem('moneyPersonal_appData', JSON.stringify(partial));
     const { result } = renderHook(() => useAppData(), { wrapper });
     expect(result.current.appData.income).toHaveLength(1);

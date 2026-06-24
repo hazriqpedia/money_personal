@@ -12,6 +12,11 @@
   --color-danger-dark: #dc2626;
   --color-danger-light: #f87171;
   --color-success: #22c55e;
+  /* Chart-only accents — a pie/donut chart's entire purpose requires distinguishable
+     slice colors, a deliberate narrow exception to this app's "no color accents" rule. */
+  --color-chart-violet: #a78bfa;
+  --color-chart-amber: #f59e0b;
+  --color-chart-cyan: #06b6d4;
 }
 
 /* iOS Safari: prevent automatic text size adjustment on orientation change */

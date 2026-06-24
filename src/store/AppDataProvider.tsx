@@ -5,7 +5,12 @@ import type {
   AppData,
   AgePlanEntry,
   IncomeEntry,
-  SavingsAccount,
+  SpendingItem,
+  CreditCardSpending,
+  SavingsAccountConfig,
+  SavingsSnapshot,
+  EpfEntry,
+  GoldEntry,
   Loan,
   Bill,
   Subscription,
@@ -29,11 +34,20 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const setProfile = (profile: Profile) => setAppData(prev => ({ ...prev, profile }));
   const setAgePlan = (entries: AgePlanEntry[]) => setAppData(prev => ({ ...prev, agePlan: entries }));
   const setIncome = (entries: IncomeEntry[]) => setAppData(prev => ({ ...prev, income: entries }));
-  const setSavings = (accounts: SavingsAccount[]) => setAppData(prev => ({ ...prev, savings: accounts }));
+  const setSavingsAccounts = (accounts: SavingsAccountConfig[]) =>
+    setAppData(prev => ({ ...prev, savingsAccounts: accounts }));
+  const setSavingsSnapshots = (snapshots: SavingsSnapshot[]) =>
+    setAppData(prev => ({ ...prev, savingsSnapshots: snapshots }));
+  const setEpfEntries = (entries: EpfEntry[]) => setAppData(prev => ({ ...prev, epfEntries: entries }));
+  const setGoldEntries = (entries: GoldEntry[]) => setAppData(prev => ({ ...prev, goldEntries: entries }));
   const setLoans = (loans: Loan[]) => setAppData(prev => ({ ...prev, loans }));
   const setBills = (bills: Bill[]) => setAppData(prev => ({ ...prev, bills }));
   const setSubscriptions = (subscriptions: Subscription[]) => setAppData(prev => ({ ...prev, subscriptions }));
   const setTaxRecords = (taxRecords: TaxRecord[]) => setAppData(prev => ({ ...prev, taxRecords }));
+  const setSpendingPlan = (items: SpendingItem[]) => setAppData(prev => ({ ...prev, spendingPlan: items }));
+  const setSavingsPlan = (items: SpendingItem[]) => setAppData(prev => ({ ...prev, savingsPlan: items }));
+  const setCreditCardSpending = (entries: CreditCardSpending[]) =>
+    setAppData(prev => ({ ...prev, creditCardSpending: entries }));
 
   return (
     <AppDataContext.Provider value={{
@@ -42,11 +56,17 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setProfile,
       setAgePlan,
       setIncome,
-      setSavings,
+      setSavingsAccounts,
+      setSavingsSnapshots,
+      setEpfEntries,
+      setGoldEntries,
       setLoans,
       setBills,
       setSubscriptions,
       setTaxRecords,
+      setSpendingPlan,
+      setSavingsPlan,
+      setCreditCardSpending,
     }}>
       {children}
     </AppDataContext.Provider>
