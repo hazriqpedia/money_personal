@@ -14,4 +14,5 @@ export interface Profile {
   currencySymbol: string;
   budgetSplit: BudgetSplit;
   creditCards: CreditCardConfig[];
+  customTaxCategories: string[];
 }

@@ -70,6 +70,35 @@ describe('hydrateAppData', () => {
     expect(result.goldEntries).toEqual(partial.goldEntries);
   });
 
+  it('defaults billSnapshots to an empty array when missing', () => {
+    expect(hydrateAppData({}).billSnapshots).toEqual([]);
+  });
+
+  it('round-trips a billSnapshots payload', () => {
+    const partial = {
+      billSnapshots: [{
+        id: 'bs1',
+        yearMonth: '2026-01',
+        entries: [{ billId: 'b1', amount: 120, paid: true }],
+        ccEntries: [{ cardId: 'c1', amount: 500, paid: false }],
+      }],
+    };
+    expect(hydrateAppData(partial).billSnapshots).toEqual(partial.billSnapshots);
+  });
+
+  it('backfills ccEntries to [] on old billSnapshots missing the field', () => {
+    const result = hydrateAppData({
+      billSnapshots: [{ id: 'bs1', yearMonth: '2026-01', entries: [] }],
+    });
+    expect(result.billSnapshots[0].ccEntries).toEqual([]);
+  });
+
+  it('migrates old Bill.amount to defaultAmount', () => {
+    const result = hydrateAppData({ bills: [{ id: '1', name: 'TNB', amount: 120 }] });
+    expect(result.bills[0].defaultAmount).toBe(120);
+    expect((result.bills[0] as unknown as Record<string, unknown>).amount).toBeUndefined();
+  });
+
   it('backfills currencySymbol, budgetSplit, and creditCards on a partial profile missing them', () => {
     const result = hydrateAppData({ profile: { dateOfBirth: '1990-01-01' } });
     expect(result.profile).toEqual({
@@ -77,6 +106,7 @@ describe('hydrateAppData', () => {
       currencySymbol: '$',
       budgetSplit: { needs: 50, wants: 30, savings: 20 },
       creditCards: [],
+      customTaxCategories: [],
     });
   });
 

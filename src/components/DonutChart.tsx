@@ -12,12 +12,12 @@ interface DonutChartProps {
 }
 
 const PALETTE = [
-  '#3b82f6', // --color-primary
-  '#22c55e', // --color-success
-  '#ef4444', // --color-danger
-  '#a78bfa', // --color-chart-violet
-  '#f59e0b', // --color-chart-amber
-  '#06b6d4', // --color-chart-cyan
+  '#5b7fa0', // muted steel blue
+  '#5a7c65', // muted sage
+  '#8a5a5a', // muted rose
+  '#7a6a92', // muted lavender
+  '#8a7a50', // muted warm gold
+  '#4a7a88', // muted teal
 ];
 
 export function DonutChart({ data, currencySymbol, size = 160 }: DonutChartProps) {

@@ -1,5 +1,6 @@
 import { Plus, Trash2 } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
+import { Link } from 'react-router-dom';
 import { useAppData } from '../store/useAppData';
 import { cn } from '../utils/cn';
 import { formatCurrency } from '../utils/currency';
@@ -15,7 +16,6 @@ import { computeTotalWeight, computeGapWeight, computeGapAverage } from '../util
 import { FormattedNumberInput } from './FormattedNumberInput';
 import { DonutChart } from './DonutChart';
 import type {
-  SavingsAccountCategory,
   SavingsSnapshot,
   SavingsBalanceEntry,
   EpfEntry,
@@ -36,10 +36,9 @@ const deleteButtonClass =
   'absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 text-zinc-600 hover:text-red-400 transition-opacity';
 
 const GOLD_MODES: GoldMode[] = ['GAP', 'Normal', 'Wealth Card'];
-const ACCOUNT_CATEGORIES: SavingsAccountCategory[] = ['savings', 'investment'];
 
 export function SavingsPage() {
-  const { appData, setSavingsAccounts, setSavingsSnapshots, setEpfEntries, setGoldEntries } = useAppData();
+  const { appData, setSavingsSnapshots, setEpfEntries, setGoldEntries } = useAppData();
   const { savingsAccounts, savingsSnapshots, epfEntries, goldEntries, profile } = appData;
   const { currencySymbol } = profile;
 
@@ -47,19 +46,6 @@ export function SavingsPage() {
   const sortedEpf = [...epfEntries].sort((a, b) => a.date.localeCompare(b.date));
   const sortedGold = [...goldEntries].sort((a, b) => a.dateBought.localeCompare(b.dateBought));
   const latestSnapshot = sortedSnapshots[sortedSnapshots.length - 1];
-
-  const addAccount = () => {
-    setSavingsAccounts([...savingsAccounts, { id: uuidv4(), name: '', category: 'savings' }]);
-  };
-  const updateAccountName = (id: string, name: string) => {
-    setSavingsAccounts(savingsAccounts.map((a) => (a.id === id ? { ...a, name } : a)));
-  };
-  const updateAccountCategory = (id: string, category: SavingsAccountCategory) => {
-    setSavingsAccounts(savingsAccounts.map((a) => (a.id === id ? { ...a, category } : a)));
-  };
-  const removeAccount = (id: string) => {
-    setSavingsAccounts(savingsAccounts.filter((a) => a.id !== id));
-  };
 
   const addSnapshot = () => {
     const newSnapshot: SavingsSnapshot = { id: uuidv4(), date: '', balances: [] };
@@ -121,60 +107,25 @@ export function SavingsPage() {
         <div className="mb-4">
           <h2 className="text-lg font-medium text-zinc-100 mb-1">Accounts</h2>
           <p className="text-zinc-500 text-sm">
-            Configure the accounts you want to track, then check in their balances over time.
+            Check in balances over time. Configure which accounts to track in{' '}
+            <Link to="/profile" className="text-zinc-400 underline underline-offset-2 hover:text-zinc-200 transition-colors">
+              Profile
+            </Link>
+            .
           </p>
-        </div>
-
-        <div className={cn(cardClass, 'mb-4')}>
-          <h3 className="text-zinc-200 font-medium mb-3">Configured accounts</h3>
-          <div className="space-y-1">
-            {savingsAccounts.map((account) => (
-              <div key={account.id} className="flex items-center gap-2 group/item">
-                <input
-                  value={account.name}
-                  onChange={(e) => updateAccountName(account.id, e.target.value)}
-                  placeholder="e.g. ASB"
-                  className="bg-transparent outline-none w-full text-sm text-zinc-300 placeholder-zinc-700 border-b border-zinc-800 focus:border-zinc-600 transition-colors py-1"
-                />
-                <div className="shrink-0 flex items-center gap-1">
-                  {ACCOUNT_CATEGORIES.map((category) => (
-                    <button
-                      key={category}
-                      type="button"
-                      onClick={() => updateAccountCategory(account.id, category)}
-                      className={cn(
-                        'px-2 py-1 rounded-md text-xs capitalize transition-colors',
-                        account.category === category ? 'bg-zinc-800 text-zinc-200' : 'text-zinc-600 hover:text-zinc-400'
-                      )}
-                    >
-                      {category}
-                    </button>
-                  ))}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => removeAccount(account.id)}
-                  aria-label="Remove account"
-                  className="shrink-0 opacity-0 group-hover/item:opacity-100 text-zinc-600 hover:text-red-400 transition-opacity"
-                >
-                  <Trash2 size={14} />
-                </button>
-              </div>
-            ))}
-          </div>
-          <button
-            type="button"
-            onClick={addAccount}
-            className="mt-3 text-xs font-medium text-zinc-500 hover:text-zinc-300 flex items-center gap-1 transition-colors"
-          >
-            <Plus size={12} /> Add account
-          </button>
         </div>
 
         {savingsAccounts.length === 0 ? (
-          <p className="text-zinc-500 text-sm text-center border border-dashed border-zinc-800 rounded-xl p-6">
-            Add an account above to start tracking balances.
-          </p>
+          <div className="py-16 text-center border border-dashed border-zinc-800 rounded-xl">
+            <p className="text-zinc-400 text-sm font-medium mb-1">No bank accounts configured yet.</p>
+            <p className="text-zinc-600 text-sm mb-4">Add your accounts in Profile to start tracking balances here.</p>
+            <Link
+              to="/profile"
+              className="inline-flex items-center gap-2 text-sm text-zinc-400 hover:text-zinc-200 border border-zinc-700 hover:border-zinc-500 rounded-lg px-4 py-2 transition-colors"
+            >
+              Go to Profile
+            </Link>
+          </div>
         ) : sortedSnapshots.length === 0 ? (
           <div className="py-12 text-center">
             <p className="text-zinc-500 text-sm mb-3">No check-ins yet.</p>

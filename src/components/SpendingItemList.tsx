@@ -7,9 +7,10 @@ import type { SpendingItem } from '../types';
 interface SpendingItemListProps {
   items: SpendingItem[];
   onChange: (items: SpendingItem[]) => void;
+  currencySymbol?: string;
 }
 
-export function SpendingItemList({ items, onChange }: SpendingItemListProps) {
+export function SpendingItemList({ items, onChange, currencySymbol }: SpendingItemListProps) {
   const pendingFocusId = useRef<string | null>(null);
 
   const addItem = () => {
@@ -55,6 +56,9 @@ export function SpendingItemList({ items, onChange }: SpendingItemListProps) {
             placeholder="…"
             className="bg-transparent outline-none w-full text-sm text-zinc-300 placeholder-zinc-700"
           />
+          {currencySymbol && (
+            <span className="shrink-0 text-zinc-500 text-sm">{currencySymbol}</span>
+          )}
           <FormattedNumberInput
             value={item.amount}
             onChange={(amount) => updateAmount(item.id, amount)}

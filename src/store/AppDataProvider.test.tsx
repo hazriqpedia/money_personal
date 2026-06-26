@@ -92,28 +92,42 @@ describe('domain setters', () => {
 
   it('setLoans updates only the loans slice', () => {
     const { result } = renderHook(() => useAppData(), { wrapper });
-    act(() => { result.current.setLoans([{ id: '1', name: 'Car Loan', principal: 20000 }]); });
+    act(() => { result.current.setLoans([{ id: '1', name: 'Car Loan', dateBought: '2024-01-01', tenure: 12, totalLoan: 20000, monthly: 1666.67, cardId: null, isCompleted: false }]); });
     expect(result.current.appData.loans).toHaveLength(1);
     expect(result.current.appData.bills).toEqual([]);
   });
 
   it('setBills updates only the bills slice', () => {
     const { result } = renderHook(() => useAppData(), { wrapper });
-    act(() => { result.current.setBills([{ id: '1', name: 'Electricity', amount: 80 }]); });
+    act(() => { result.current.setBills([{ id: '1', name: 'Electricity', defaultAmount: 80 }]); });
     expect(result.current.appData.bills).toHaveLength(1);
     expect(result.current.appData.subscriptions).toEqual([]);
   });
 
+  it('setBillSnapshots updates only the billSnapshots slice', () => {
+    const { result } = renderHook(() => useAppData(), { wrapper });
+    act(() => {
+      result.current.setBillSnapshots([{
+        id: '1',
+        yearMonth: '2026-01',
+        entries: [{ billId: 'b1', amount: 120, paid: false }],
+        ccEntries: [],
+      }]);
+    });
+    expect(result.current.appData.billSnapshots).toHaveLength(1);
+    expect(result.current.appData.bills).toEqual([]);
+  });
+
   it('setSubscriptions updates only the subscriptions slice', () => {
     const { result } = renderHook(() => useAppData(), { wrapper });
-    act(() => { result.current.setSubscriptions([{ id: '1', name: 'Streaming', amount: 15 }]); });
+    act(() => { result.current.setSubscriptions([{ id: '1', category: 'subscription', name: 'Streaming', billingDate: '', monthly: 15, annually: 0, cardId: null, paymentMethod: '', insuranceType: '' }]); });
     expect(result.current.appData.subscriptions).toHaveLength(1);
     expect(result.current.appData.taxRecords).toEqual([]);
   });
 
   it('setTaxRecords updates only the taxRecords slice', () => {
     const { result } = renderHook(() => useAppData(), { wrapper });
-    act(() => { result.current.setTaxRecords([{ id: '1', year: 2026, amountPaid: 3000 }]); });
+    act(() => { result.current.setTaxRecords([{ id: '1', year: 2026, category: 'EPF', item: '', date: '', amount: 3000 }]); });
     expect(result.current.appData.taxRecords).toHaveLength(1);
     expect(result.current.appData.agePlan).toEqual([]);
   });
@@ -136,6 +150,7 @@ describe('domain setters', () => {
       currencySymbol: '$',
       budgetSplit: { needs: 50, wants: 30, savings: 20 },
       creditCards: [],
+      customTaxCategories: [],
     };
     act(() => { result.current.setProfile(profile); });
     expect(result.current.appData.profile).toEqual(profile);

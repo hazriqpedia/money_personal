@@ -154,6 +154,10 @@ The Savings figure inside the Income card is the one deliberate exception to "no
 
 Three more bespoke cards sit below the Income card: **"Savings Accounts"** (latest `SavingsSnapshot`'s `computeRowTotal`/`computeSavingsOnlyTotal`), **"EPF"** (latest `EpfEntry`'s `account1+account2+account3` total and `monthlySavings`), and **"Gold"** (`computeTotalWeight`/`computeGapWeight`/`computeTotalCost` across all `goldEntries` — labeled "Total Spent", explicitly a cost-basis figure, never a live market value, since fetching a real-time gold price would require an external API call, which this app never does).
 
+**One-time configuration belongs in Profile, not the domain tab.** If a set of data is set up once and rarely changed (bill names, credit cards, bank accounts), it lives in ProfilePage — not inside the domain tab that uses it. The domain tab then shows a splash/banner when nothing is configured yet, directing the user to Profile. BillsPage's utility-bill names + default amounts and its credit card identities (both one-time setup) follow this pattern; IncomePage's credit card spending breakdowns and SavingsPage's account config also live in Profile for the same reason. When a new tab needs per-entity config that the user sets up and forgets, add it to ProfilePage, not the tab itself.
+
+**Dashboard card convention — every tab contributes real data.** The bottom grid on the Dashboard should always show *meaningful* summary data for each tab, not just `formatCount(array.length)`. When a tab's data model matures enough to have real computed values, upgrade its Dashboard card to show those values. Bills shows latest month, total amount, and paid count; Loans shows active count and monthly installments; Savings shows latest snapshot totals. Future stubs (Subscriptions, Tax) should follow the same pattern when their tab features land — never leave them as generic counters once there's real data to show.
+
 ## Routing
 
 `src/config/tabs.ts` (`TABS`) is the single source of truth for the 8 financial domain tabs — each entry has `path`, `label`, `icon`, and the `Component` to render. `router.tsx` derives its route list directly from `TABS`, and `Layout.tsx` derives its nav links from the same array. **Adding a 9th domain tab = one entry in `TABS` plus one new component file** — never hand-write a `<NavLink>` or a route for one of the 8.
@@ -172,7 +176,7 @@ Three more bespoke cards sit below the Income card: **"Savings Accounts"** (late
 - [x] Income — Year/Monthly/Annually/Increment/Gross/Difference table, monthly spending plan, savings breakdown, per-credit-card breakdown (configured in Profile), auto-balance
 - [x] Savings — account CRUD UI (date-rows × account-columns, category-based totals, withdrawal indicator), EPF table, Gold table, Dashboard cards
 - [ ] Loan — loan CRUD UI + amortization calculations
-- [ ] Bills — recurring bill CRUD UI
+- [x] Bills — month-by-month bill tracking (configure bills, track actual amounts per month with paid/unpaid toggle, trend chart)
 - [ ] Subscription — subscription CRUD UI + renewal tracking
 - [ ] Tax — tax record CRUD UI
 

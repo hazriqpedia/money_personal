@@ -9,6 +9,8 @@ import {
   formatDifference,
   pickPrimaryEntry,
 } from '../utils/income';
+import { computeMonthlyForCard } from '../utils/loan';
+import { computeMonthlyForCard as computeSubMonthlyForCard } from '../utils/subscription';
 import { formatCurrency } from '../utils/currency';
 import { cn } from '../utils/cn';
 import { SpendingItemList } from './SpendingItemList';
@@ -85,7 +87,10 @@ export function IncomePage() {
 
   const cardTotals = profile.creditCards.map((card) => {
     const items = creditCardSpending.find((c) => c.cardId === card.id)?.items ?? [];
-    return { id: card.id, name: card.name, total: items.reduce((sum, i) => sum + i.amount, 0) };
+    const manualTotal = items.reduce((sum, i) => sum + i.amount, 0);
+    const loanTotal = computeMonthlyForCard(appData.loans, card.id);
+    const subscriptionTotal = computeSubMonthlyForCard(appData.subscriptions, card.id);
+    return { id: card.id, name: card.name, total: manualTotal + loanTotal + subscriptionTotal, loanTotal, subscriptionTotal };
   });
   const totalCC = cardTotals.reduce((sum, c) => sum + c.total, 0);
   const savingsTotal = savingsPlan.reduce((sum, i) => sum + i.amount, 0);
@@ -248,46 +253,51 @@ export function IncomePage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         <div className={cardClass}>
-          <h3 className="text-zinc-200 font-medium mb-3">Monthly spending</h3>
-          <SpendingItemList items={spendingPlan} onChange={setSpendingPlan} />
-          <p className="text-xs text-zinc-500 mt-3 pt-3 border-t border-zinc-800/50">
-            Total:{' '}
-            <span className="text-zinc-300">{formatCurrency(manualSpendingTotal, profile.currencySymbol)}</span>
-          </p>
-          <div className="mt-4">
-            <DonutChart data={mainChartData} currencySymbol={profile.currencySymbol} />
-          </div>
-          <div className="mt-4 pt-4 border-t border-zinc-800/50 space-y-1">
+          <h3 className="text-zinc-200 font-medium mb-4">Monthly Spending</h3>
+          <DonutChart data={mainChartData} currencySymbol={profile.currencySymbol} />
+          <div className="mt-4 space-y-1.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-zinc-500">Total</span>
+              <span className="text-zinc-300">{formatCurrency(manualSpendingTotal, profile.currencySymbol)}</span>
+            </div>
+            {totalCC > 0 && (
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-zinc-600">Total CC</span>
+                <span className="text-zinc-500">{formatCurrency(totalCC, profile.currencySymbol)}</span>
+              </div>
+            )}
             {currentYearEntry ? (
-              <p className="text-sm text-zinc-300">
-                Balance:{' '}
+              <div className="flex items-center justify-between text-sm pt-2 border-t border-zinc-800/50">
+                <span className="text-zinc-400">Balance</span>
                 <span className="text-zinc-100 font-medium">
                   {formatCurrency(balance ?? 0, profile.currencySymbol)}
                 </span>
-              </p>
+              </div>
             ) : (
-              <p className="text-sm text-zinc-500">
-                Add an entry for {currentYear} in the table above to see your balance.
+              <p className="text-xs text-zinc-500 pt-2 border-t border-zinc-800/50">
+                Add an entry for {currentYear} to see your balance.
               </p>
             )}
-            <p className="text-sm text-zinc-300">
-              Total CC:{' '}
-              <span className="text-zinc-100 font-medium">{formatCurrency(totalCC, profile.currencySymbol)}</span>
-            </p>
+          </div>
+          <div className="mt-4 pt-4 border-t border-zinc-800/50">
+            <SpendingItemList items={spendingPlan} onChange={setSpendingPlan} currencySymbol={profile.currencySymbol} />
           </div>
         </div>
 
         <div className={cardClass}>
-          <h3 className="text-zinc-200 font-medium mb-3">Savings</h3>
-          <SpendingItemList items={savingsPlan} onChange={setSavingsPlan} />
-          <p className="text-xs text-zinc-500 mt-3 pt-3 border-t border-zinc-800/50">
-            Total: <span className="text-zinc-300">{formatCurrency(savingsTotal, profile.currencySymbol)}</span>
-          </p>
-          <div className="mt-4">
-            <DonutChart
-              data={savingsPlan.map((i) => ({ label: i.name || 'Untitled', value: i.amount }))}
-              currencySymbol={profile.currencySymbol}
-            />
+          <h3 className="text-zinc-200 font-medium mb-4">Savings</h3>
+          <DonutChart
+            data={savingsPlan.map((i) => ({ label: i.name || 'Untitled', value: i.amount }))}
+            currencySymbol={profile.currencySymbol}
+          />
+          <div className="mt-4 space-y-1.5">
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-zinc-500">Total</span>
+              <span className="text-zinc-300">{formatCurrency(savingsTotal, profile.currencySymbol)}</span>
+            </div>
+          </div>
+          <div className="mt-4 pt-4 border-t border-zinc-800/50">
+            <SpendingItemList items={savingsPlan} onChange={setSavingsPlan} currencySymbol={profile.currencySymbol} />
           </div>
         </div>
       </div>
@@ -303,19 +313,41 @@ export function IncomePage() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {profile.creditCards.map((card) => {
             const cardItems = creditCardSpending.find((c) => c.cardId === card.id)?.items ?? [];
-            const cardTotal = cardItems.reduce((sum, i) => sum + i.amount, 0);
+            const cardEntry = cardTotals.find((c) => c.id === card.id);
+            const loanTotal = cardEntry?.loanTotal ?? 0;
+            const subscriptionTotal = cardEntry?.subscriptionTotal ?? 0;
+            const cardTotal = cardEntry?.total ?? 0;
             return (
               <div key={card.id} className={cardClass}>
-                <h3 className="text-zinc-200 font-medium mb-3">{card.name || 'Untitled card'} breakdown</h3>
-                <SpendingItemList items={cardItems} onChange={(items) => updateCardItems(card.id, items)} />
-                <p className="text-xs text-zinc-500 mt-3 pt-3 border-t border-zinc-800/50">
-                  Total: <span className="text-zinc-300">{formatCurrency(cardTotal, profile.currencySymbol)}</span>
-                </p>
-                <div className="mt-4">
-                  <DonutChart
-                    data={cardItems.map((i) => ({ label: i.name || 'Untitled', value: i.amount }))}
-                    currencySymbol={profile.currencySymbol}
-                  />
+                <h3 className="text-zinc-200 font-medium mb-4">{card.name || 'Untitled Card'} Breakdown</h3>
+                <DonutChart
+                  data={[
+                    ...cardItems.map((i) => ({ label: i.name || 'Untitled', value: i.amount })),
+                    ...(loanTotal > 0 ? [{ label: 'Loan Installments', value: loanTotal }] : []),
+                    ...(subscriptionTotal > 0 ? [{ label: 'Subscriptions', value: subscriptionTotal }] : []),
+                  ]}
+                  currencySymbol={profile.currencySymbol}
+                />
+                <div className="mt-4 space-y-1.5">
+                  {loanTotal > 0 && (
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-zinc-600">Loan Installments</span>
+                      <span className="text-zinc-500">{formatCurrency(loanTotal, profile.currencySymbol)}</span>
+                    </div>
+                  )}
+                  {subscriptionTotal > 0 && (
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-zinc-600">Subscriptions</span>
+                      <span className="text-zinc-500">{formatCurrency(subscriptionTotal, profile.currencySymbol)}</span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-zinc-500">Total</span>
+                    <span className="text-zinc-300">{formatCurrency(cardTotal, profile.currencySymbol)}</span>
+                  </div>
+                </div>
+                <div className="mt-4 pt-4 border-t border-zinc-800/50">
+                  <SpendingItemList items={cardItems} onChange={(items) => updateCardItems(card.id, items)} currencySymbol={profile.currencySymbol} />
                 </div>
               </div>
             );

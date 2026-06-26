@@ -13,6 +13,7 @@ import type {
   GoldEntry,
   Loan,
   Bill,
+  BillSnapshot,
   Subscription,
   TaxRecord,
   Profile,
@@ -42,6 +43,8 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const setGoldEntries = (entries: GoldEntry[]) => setAppData(prev => ({ ...prev, goldEntries: entries }));
   const setLoans = (loans: Loan[]) => setAppData(prev => ({ ...prev, loans }));
   const setBills = (bills: Bill[]) => setAppData(prev => ({ ...prev, bills }));
+  const setBillSnapshots = (billSnapshots: BillSnapshot[]) =>
+    setAppData(prev => ({ ...prev, billSnapshots }));
   const setSubscriptions = (subscriptions: Subscription[]) => setAppData(prev => ({ ...prev, subscriptions }));
   const setTaxRecords = (taxRecords: TaxRecord[]) => setAppData(prev => ({ ...prev, taxRecords }));
   const setSpendingPlan = (items: SpendingItem[]) => setAppData(prev => ({ ...prev, spendingPlan: items }));
@@ -62,6 +65,7 @@ export const AppDataProvider: React.FC<{ children: React.ReactNode }> = ({ child
       setGoldEntries,
       setLoans,
       setBills,
+      setBillSnapshots,
       setSubscriptions,
       setTaxRecords,
       setSpendingPlan,

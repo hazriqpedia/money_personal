@@ -11,6 +11,7 @@ import type {
   GoldEntry,
   Loan,
   Bill,
+  BillSnapshot,
   Subscription,
   TaxRecord,
   Profile,
@@ -28,6 +29,7 @@ export interface AppDataContextType {
   setGoldEntries: (entries: GoldEntry[]) => void;
   setLoans: (loans: Loan[]) => void;
   setBills: (bills: Bill[]) => void;
+  setBillSnapshots: (snapshots: BillSnapshot[]) => void;
   setSubscriptions: (subscriptions: Subscription[]) => void;
   setTaxRecords: (records: TaxRecord[]) => void;
   setSpendingPlan: (items: SpendingItem[]) => void;
